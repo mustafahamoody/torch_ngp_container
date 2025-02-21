@@ -1,0 +1,28 @@
+
+services:
+  torch-ngp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    runtime: nvidia
+
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all  # Use all available GPUs
+      - DISPLAY=${DISPLAY} # Set the display to the host display
+
+    # user: "${UID}:${GID}"
+
+    # Use a long-running command to keep the container alive
+    command: >
+      /bin/bash -c "
+        echo 'source /opt/conda/etc/profile.d/conda.sh && conda activate torch-ngp' >> ~/.bashrc &&
+        tail -f /dev/null
+      "
+
+    volumes:
+      - ..:/app/torch-ngp/
+
+    network_mode: host
+
+    
