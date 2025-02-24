@@ -42,9 +42,10 @@ python env_create.py --train
 python env_create.py --view
 ```
 
-## Potential Issues
 ***To visualise the created environment using the GUI you must connect your host machine display to the docker container using X11***
 To Set this up run the following commands ***On your host machine:***
+
+** For Linux Machines: **
 ``` bash
 # 1. Install X11 Server
 sudo apt-get install xorg openbox
@@ -52,6 +53,7 @@ sudo apt-get install xorg openbox
 # 2. Allow Docker to access your X server
 xhost +local:docker
 ```
+
 
 ## Citation
 If you use this work, please include the following citations
