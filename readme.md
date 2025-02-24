@@ -2,7 +2,7 @@
 
 First, Clone this repo
 ```bash
-git clone https://github.com/mustafahamoody/Torch_NGP_Container
+git clone https://github.com/mustafahamoody/torch_ngp_container
 ```
 
 Change working directory to the docker folder in this repo: 
@@ -90,12 +90,12 @@ torch-ngp:
 }
 ```
 
-Torch_NGP_Container:
+torch_ngp_container:
 ```
 @misc{torch_ngp_container,
     Author = {Mustafa Hamoody},
     Year = {2025},
-    Note = {https://github.com/mustafahamoody/Torch_NGP_Container},
-    Title = {Torch_NGP_Container: A Docker Container of Torch-ngp}
+    Note = {https://github.com/mustafahamoody/torch_ngp_container},
+    Title = {torch_ngp_container: Docker container of torch-ngp with easier NeRF creation}
 
 ```
