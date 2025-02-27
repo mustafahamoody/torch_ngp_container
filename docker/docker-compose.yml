@@ -11,7 +11,7 @@ services:
       - NVIDIA_VISIBLE_DEVICES=all  # Use all available GPUs
       - DISPLAY=${DISPLAY} # Set the display to the host display
     
-    # user: "${UID}:${GID}"
+    user: 1000:1000  # Set linux user id and group so files and dirs are created as user, and not root
 
     # Use a long-running command to keep the container alive
     command: >

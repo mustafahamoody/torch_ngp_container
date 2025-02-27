@@ -11,29 +11,33 @@ args = parser.parse_args()
 data_path = args.data
 blur_threshold = args.blur_threshold
 
-images_counter = 0
-blurry_images_counter = 0
+image_counter = 0
+blurry_image_counter = 0
 
-def is_blurry(img_path, threshold=blur_threshold, images_counter=images_counter):
+def is_blurry(img_path, threshold=blur_threshold):
     img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE) # Load image as grayscale 
     if img is None:
         return False # Skip non-image files in folder
     
-    images_counter += 1
+    global image_counter
+    image_counter += 1
 
     laplacian_var = cv2.Laplacian(img, cv2.CV_64F).var() # Calculate Laplacian variance to determine how blurry the image is
     return laplacian_var < threshold
     
-def remove_blurry(data_path, images_counter=images_counter, blurry_images_counter=blurry_images_counter):
+def remove_blurry(data_path):
+    global blurry_image_counter
+    
+    print(f'Removing blurry images from {data_path} with blur threshold: {blur_threshold}')
     for filename in os.listdir(data_path):
         img_path = os.path.join(data_path, filename)
         if os.path.isfile(img_path) and is_blurry(img_path):
-            print(f'Removing Blurry image: {filename}')
-            blurry_images_counter += 1
+            # print(f'Removing Blurry image: {filename}')
+            blurry_image_counter += 1
             os.remove(img_path)
 
-    print(f'Removed {blurry_images_counter} (out of {images_counter} images)')
-    print(f'{blurry_images_counter/images_counter * 100}% of images were detected as blurry')
+    print(f'Removed {blurry_image_counter} (out of {image_counter} images)')
+    print(f'{(blurry_image_counter/image_counter) * 100}% of images were detected as blurry')
     print('')
             
 if __name__ == '__main__':
