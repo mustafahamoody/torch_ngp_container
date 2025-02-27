@@ -7,11 +7,18 @@ import argparse
 nerf_model = 'torch-ngp' # Default NeRF model to use. Other Option: 'd-nerf' -- Use d-nerf if video is dynamic.
 
 bound = "2.0" # Default (Axis-ALigned) Bounding Box scale
-scale = "0.33" # Default scale
-dt_gamma = "0.02" # Default dt_gamma
+scale = "0.5" # Default scale
+dt_gamma = "0.0" # Default dt_gamma
+density_thresh = "10.0" # Default density threshold
+iters = "40000" # Default number of iterations
 
-# Frame extraction (per second) for video
-video_fps = "10" 
+video_fps = "10" # Frame extraction (per second) for video
+
+
+# --------------DATA SETUP--------------
+input_type = "video"
+
+content_path = "data/box.mp4"
 
 # ------------------------------------------
 
@@ -21,10 +28,8 @@ parser = argparse.ArgumentParser(description="Skip environment setup and directl
 parser.add_argument('--run', action='store_true', help="Run entire env_creation process")
 parser.add_argument('--train', action='store_true', help="Skip to generating NeRF environment")
 parser.add_argument('--view', action='store_true', help="View the generated NeRF model")
-# parser.add_argument('--dynamic', action='store_true', help="Create dynamic NeRF model")
 
 args = parser.parse_args()
-
 
 def data_setup():
     """Setup the environment data"""
@@ -35,20 +40,18 @@ def data_setup():
     print('')
 
     while True:
-        input_type = input("Image or Video: ").strip().lower()
         if input_type in ["image", "video"]:
             break
         else:
-            print("Invalid input. Please enter 'image' or 'video'.")
-    print('')
+            print("Invalid input type. Please enter 'image' or 'video'.")
+            print('')
 
     while True:
-        content_path = input("Enter Path to Video: ") if input_type == "video" else input("Enter Path to folder with images: ")
         if os.path.exists(content_path):
             break
         else:
-            print("Invalid path. Please enter a valid path.")
-    print('')
+            print("Invalid content path. Please enter a valid path.")
+            print('')
 
     if input(f'WARNING: This process will create a new environment with the name \"{env_name}\" \n \
              or DELETE AND REPLACE ALL DATA if the environment already exists. Continue? (y/n): ') == 'n':
@@ -72,6 +75,7 @@ def data_setup():
         shutil.copy(content_path, env_folder)
         print(f"Video copied from {content_path} to {env_folder} \n")
         video_path = os.path.join(env_folder, os.path.basename(content_path)) #Get the video path in the environment folder
+        print(video_path)
 
     else:
         # Copy all (image) files from the specified folder path to the images folder
@@ -106,14 +110,14 @@ def data_setup():
         subprocess.run([
             "python", colmap2nerf_path,
             "--images", images_folder,
-            "--hold", "0",
-            "--run_colmap"
+            "--run_colmap",
+            "--estimate_affine_shape"
         ])
 
         print("Environment Folder Setup Complete \n")
 
     except Exception as e:
-        print(f"Error running colmap2nerf: {e}")
+        print(f"Error running colmap: {e}")
     
     return env_name
 
@@ -132,7 +136,7 @@ def env_create(env_name):
     print("Generating NeRF Model of Environment \n")
 
     #May  need to set and try = different scale & bound & dt_gamma to make the object correctly located in the bounding box and render fluently.
-    subprocess.run(["python", model_path, env_folder, "--workspace", env_nerf, "-O", "--error_map","--bound", bound, "--scale", scale, "--dt_gamma", dt_gamma])
+    subprocess.run(["python", model_path, env_folder, "--workspace", env_nerf, "-O", "--error_map","--bound", bound, "--scale", scale, "--dt_gamma", dt_gamma, "--density_thresh", density_thresh, "--iters", iters])
     
     print("NeRF Model Generated \n")
     
@@ -152,7 +156,7 @@ def env_view(env_name):
         model_path = os.path.join(os.getcwd(), "torch_ngp", "main_nerf.py")
     
     
-    subprocess.run(["python", model_path, env_folder, "--workspace", env_nerf,"-O", "--error_map","--bound", bound, "--scale", scale, "--dt_gamma", dt_gamma, "--gui", "--test"])
+    subprocess.run(["python", model_path, env_folder, "--workspace", env_nerf,"-O", "--error_map","--bound", bound, "--scale", scale, "--dt_gamma", dt_gamma, "--density_thresh", density_thresh, "--gui", "--test"])
 
 
 # Run the script based on the command line arguments
