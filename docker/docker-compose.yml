@@ -10,7 +10,7 @@ services:
     environment:
       - NVIDIA_VISIBLE_DEVICES=all  # Use all available GPUs
       - DISPLAY=${DISPLAY} # Set the display to the host display
-
+    
     # user: "${UID}:${GID}"
 
     # Use a long-running command to keep the container alive

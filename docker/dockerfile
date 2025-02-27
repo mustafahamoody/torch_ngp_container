@@ -94,11 +94,12 @@ RUN git clone https://github.com/ashawkey/torch-ngp.git /app/torch-ngp
 WORKDIR /app/torch-ngp/
 RUN /opt/conda/bin/conda run -n torch-ngp pip install -r requirements.txt
 
-# Install correct PyTorch, torchvision, and torchaudio versions
+# Install correct PyTorch, torchvision, and torchaudio versions, as well as other needed packages
 RUN /opt/conda/bin/conda run -n torch-ngp pip uninstall torch torchvision torchaudio numpy -y
 RUN /opt/conda/bin/conda run -n torch-ngp pip install torch==1.10.0+cu113 torchvision==0.11.0+cu113 torchaudio==0.10.0 -f https://download.pytorch.org/whl/torch_stable.html
 RUN /opt/conda/bin/conda run -n torch-ngp pip install numpy==1.26.4
 RUN /opt/conda/bin/conda run -n torch-ngp pip install imageio[ffmpeg]
+RUN /
 
 # Set GCC 10 as default
 RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 100 && \
