@@ -7,7 +7,7 @@ git clone https://github.com/mustafahamoody/torch_ngp_container
 
 Change working directory to the docker folder in this repo: 
 ```bash
-cd Torch_NGP_Container/docker/
+cd torch_ngp_container/docker/
 ```
 
 Build and run container (detached) with correct dependencies and mounted folder for data: 
