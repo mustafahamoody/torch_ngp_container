@@ -4,10 +4,8 @@ FROM nvidia/cuda:11.3.1-devel-ubuntu20.04
 # Set the working directory
 WORKDIR /app
 
-# Set the timezone -- Some packages require this
+# Set system to non interactive mode
 ENV DEBIAN_FRONTEND=noninteractive
-# ENV TZ=America/New_York
-# RUN apt-get update && apt-get install -y tzdata
 
 # Install System Dependencies
 RUN apt-get update && apt-get upgrade -y && apt-get install -y \
@@ -99,7 +97,6 @@ RUN /opt/conda/bin/conda run -n torch-ngp pip uninstall torch torchvision torcha
 RUN /opt/conda/bin/conda run -n torch-ngp pip install torch==1.10.0+cu113 torchvision==0.11.0+cu113 torchaudio==0.10.0 -f https://download.pytorch.org/whl/torch_stable.html
 RUN /opt/conda/bin/conda run -n torch-ngp pip install numpy==1.26.4
 RUN /opt/conda/bin/conda run -n torch-ngp pip install imageio[ffmpeg]
-RUN /
 
 # Set GCC 10 as default
 RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 100 && \
@@ -122,3 +119,7 @@ RUN echo "export PATH=/usr/local/cuda/bin:$PATH" >> ~/.bashrc && \
 
 # Build Torch-NGP
 RUN /opt/conda/bin/conda run -n torch-ngp bash scripts/install_ext.sh
+
+# Set the UID and GID dynamically during build  -- Needed for the user to have access to the files and dirs
+RUN echo "export UID=$(id -u)" >> /root/.bashrc && \
+    echo "export GID=$(id -g)" >> /root/.bashrc
