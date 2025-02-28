@@ -4,21 +4,23 @@ import shutil
 import argparse
 
 # ------------GLOBAL NERF SETUP------------
-nerf_model = 'torch-ngp' # Default NeRF model to use. Other Option: 'd-nerf' -- Use d-nerf if video is dynamic.
-
 bound = "2.0" # Default (Axis-ALigned) Bounding Box scale
 scale = "0.5" # Default scale
 dt_gamma = "0.0" # Default dt_gamma
 density_thresh = "10.0" # Default density threshold
 iters = "40000" # Default number of iterations
 
-video_fps = "10" # Frame extraction (per second) for video
-
-
-# --------------DATA SETUP--------------
+# --------------DATA SETUP-------------
 input_type = "video"
 
 content_path = "data/box.mp4"
+
+video_fps = "10" # Frame extraction (per second) for video
+
+# --------------ENVIRONMENT SCALING------------
+point1 = [0.3, 0.0, 0.0] # x, y, z coordinates of the first point
+point2 = [0.7, 0.0, 0.0] # x, y, z coordinates of the second point
+real_world_distance = 1.0 # Real-world distance between the two points 
 
 # ------------------------------------------
 
@@ -26,6 +28,7 @@ content_path = "data/box.mp4"
 parser = argparse.ArgumentParser(description="Skip environment setup and directly generate NeRF model of the environment-- Used to adjust parameter when data is already setup")
 
 parser.add_argument('--run', action='store_true', help="Run entire env_creation process")
+parser.add_argument('--scale', action='store_true', help="Scale the environment to match real world size")
 parser.add_argument('--train', action='store_true', help="Skip to generating NeRF environment")
 parser.add_argument('--view', action='store_true', help="View the generated NeRF model")
 
@@ -118,9 +121,49 @@ def data_setup():
 
     except Exception as e:
         print(f"Error running colmap: {e}")
-    
+
     return env_name
 
+
+def scale_env(env_name):
+    """Scale the environment"""
+    env_folder = os.path.join(os.getcwd(), "data", env_name)
+
+    # File Paths to open Colmap Point Cloud in GUI
+    colmap_project_path = os.path.join(env_folder, "colmap_sparse", "0")
+    colmap_db_path = os.path.join(env_folder, "colmap.db")
+    image_path = os.path.join(env_folder, "images")
+
+    # Run colmap to determine diffrence between 2 points
+    subprocess.run([
+        "colmap", "gui",
+        "--import_path", colmap_project_path,
+        "--database_path", colmap_db_path,
+        "--image_path", image_path
+    ])
+
+
+    # Get 2 points from user
+    while True:
+        point1 = input("Enter the first point: x, y, z: ").strip()
+        point1 = [float(x) for x in point1.split(',')]
+        point2 = input("Enter the second point: x, y, z: ").strip()
+        point2 = [float(x) for x in point2.split(',')]
+        if point1 and point2:
+            break
+        else:
+            print("Invalid points. Please enter 2 points in x, y, z format.")
+
+    scale_env_path = os.path.join(os.getcwd(), "scale_env.py")
+    json_path = os.path.join(env_folder, "transforms.json")
+
+    subprocess.run([
+        "python", scale_env_path,
+        "--json_path", json_path,
+        "--real_distance", str(real_world_distance),
+        "--point1", str(point1[0]), str(point1[1]), str(point1[2]),
+        "--point2", str(point2[0]), str(point2[1]), str(point2[2])
+    ])
 
 def env_create(env_name):
     """Generate NeRF environment"""
@@ -128,19 +171,20 @@ def env_create(env_name):
     env_nerf = os.path.join(os.getcwd(), "data", env_name) + "_nerf"
 
     # Generate NeRF environment
-    if  nerf_model == "d-nerf":
-        model_path = os.path.join(os.getcwd(), "torch_ngp", "main_dnerf.py")
-    else:
-        model_path = os.path.join(os.getcwd(), "torch_ngp", "main_nerf.py")
+    model_path = os.path.join(os.getcwd(), "torch_ngp", "main_nerf.py")
 
     print("Generating NeRF Model of Environment \n")
 
-    #May  need to set and try = different scale & bound & dt_gamma to make the object correctly located in the bounding box and render fluently.
-    subprocess.run(["python", model_path, env_folder, "--workspace", env_nerf, "-O", "--error_map","--bound", bound, "--scale", scale, "--dt_gamma", dt_gamma, "--density_thresh", density_thresh, "--iters", iters])
+    try:
+        #Train NeRF model on the environment
+        subprocess.run(["python", model_path, env_folder, "--workspace", env_nerf, "-O", "--error_map","--bound", bound, "--scale", scale, "--dt_gamma", dt_gamma, "--density_thresh", density_thresh, "--iters", iters])
+        print(f"NeRF Model of environment saved at {env_nerf} \n")
     
-    print("NeRF Model Generated \n")
+    except Exception as e:
+        print(f"Error generating NeRF model: {e}")
     
-    print(f"NeRF Model of environment saved at {env_nerf} \n")
+    
+    print("--------------------------------NeRF Model Generration Complete--------------------------------")
     
     return env_nerf
 
@@ -150,10 +194,7 @@ def env_view(env_name):
     env_folder = os.path.join(os.getcwd(), "data", env_name)
     env_nerf = os.path.join(os.getcwd(), "data", env_name) + "_nerf"
    
-    if nerf_model == "d-nerf":
-        model_path = os.path.join(os.getcwd(), "torch_ngp", "main_dnerf.py")
-    else:
-        model_path = os.path.join(os.getcwd(), "torch_ngp", "main_nerf.py")
+    model_path = os.path.join(os.getcwd(), "torch_ngp", "main_nerf.py")
     
     
     subprocess.run(["python", model_path, env_folder, "--workspace", env_nerf,"-O", "--error_map","--bound", bound, "--scale", scale, "--dt_gamma", dt_gamma, "--density_thresh", density_thresh, "--gui", "--test"])
@@ -164,16 +205,15 @@ if args.train:
     env_name = input("Enter Environment Name (from setup): ").strip()
     env_create(env_name)
 
+elif args.scale:
+    env_name = input("Enter Environment Name (from setup): ").strip()
+    scale_env(env_name)
+
 elif args.view:
     env_name = input("Enter Environment Name (from setup): ").strip()
     env_view(env_name)
 
-elif args.run:
-    env_name = data_setup()
-    env_create(env_name)
-    env_view(env_name)
-
 else:
     env_name = data_setup()
+    scale_env(env_name)
     env_create(env_name)
-    env_view(env_name)
