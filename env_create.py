@@ -4,23 +4,23 @@ import shutil
 import argparse
 
 # ------------GLOBAL NERF SETUP------------
-bound = "2.0" # Default (Axis-ALigned) Bounding Box scale
+bound = "4.0" # Default (Axis-ALigned) Bounding Box scale
 scale = "0.5" # Default scale
 dt_gamma = "0.0" # Default dt_gamma
 density_thresh = "10.0" # Default density threshold
 iters = "40000" # Default number of iterations
 
 # --------------DATA SETUP-------------
-input_type = "video"
+input_type = "image"
 
-content_path = "data/box.mp4"
+content_path = "data/my_scene_2"
 
 video_fps = "10" # Frame extraction (per second) for video
 
 # --------------ENVIRONMENT SCALING------------
-point1 = [0.3, 0.0, 0.0] # x, y, z coordinates of the first point
-point2 = [0.7, 0.0, 0.0] # x, y, z coordinates of the second point
-real_world_distance = 1.0 # Real-world distance between the two points 
+# point1 = [0.3, 0.0, 0.0] # x, y, z coordinates of the first point
+# point2 = [0.7, 0.0, 0.0] # x, y, z coordinates of the second point
+real_world_distance = 5 # Real-world distance between the two points 
 
 # ------------------------------------------
 
@@ -31,7 +31,7 @@ parser.add_argument('--run', action='store_true', help="Run entire env_creation 
 parser.add_argument('--scale', action='store_true', help="Scale the environment to match real world size")
 parser.add_argument('--train', action='store_true', help="Skip to generating NeRF environment")
 parser.add_argument('--view', action='store_true', help="View the generated NeRF model")
-
+parser.add_argument('--no_gui', action='store_true', help="Do not open GUI for colmap")
 args = parser.parse_args()
 
 def data_setup():
@@ -42,19 +42,13 @@ def data_setup():
     env_name = input("Enter Environment Name: ").strip()
     print('')
 
-    while True:
-        if input_type in ["image", "video"]:
-            break
-        else:
-            print("Invalid input type. Please enter 'image' or 'video'.")
-            print('')
+    if input_type not in ["image", "video"]:
+        print("Invalid input type. Please enter 'image' or 'video'.")
+        exit(1)
 
-    while True:
-        if os.path.exists(content_path):
-            break
-        else:
-            print("Invalid content path. Please enter a valid path.")
-            print('')
+    if not os.path.exists(content_path):
+        print("Invalid content path. Please enter a valid path.")
+        exit(1)
 
     if input(f'WARNING: This process will create a new environment with the name \"{env_name}\" \n \
              or DELETE AND REPLACE ALL DATA if the environment already exists. Continue? (y/n): ') == 'n':
@@ -135,12 +129,13 @@ def scale_env(env_name):
     image_path = os.path.join(env_folder, "images")
 
     # Run colmap to determine diffrence between 2 points
-    subprocess.run([
-        "colmap", "gui",
-        "--import_path", colmap_project_path,
-        "--database_path", colmap_db_path,
-        "--image_path", image_path
-    ])
+    if not args.no_gui:
+        subprocess.run([
+            "colmap", "gui",
+            "--import_path", colmap_project_path,
+            "--database_path", colmap_db_path,
+            "--image_path", image_path
+        ])
 
 
     # Get 2 points from user
@@ -156,6 +151,8 @@ def scale_env(env_name):
 
     scale_env_path = os.path.join(os.getcwd(), "scale_env.py")
     json_path = os.path.join(env_folder, "transforms.json")
+    if not os.path.exists(json_path):
+        json_path = os.path.join(env_folder, "transforms_train.json")
 
     subprocess.run([
         "python", scale_env_path,
@@ -178,13 +175,11 @@ def env_create(env_name):
     try:
         #Train NeRF model on the environment
         subprocess.run(["python", model_path, env_folder, "--workspace", env_nerf, "-O", "--error_map","--bound", bound, "--scale", scale, "--dt_gamma", dt_gamma, "--density_thresh", density_thresh, "--iters", iters])
-        print(f"NeRF Model of environment saved at {env_nerf} \n")
     
     except Exception as e:
         print(f"Error generating NeRF model: {e}")
     
-    
-    print("--------------------------------NeRF Model Generration Complete--------------------------------")
+    print(f"--------------------------------NeRF Model Generration Complete: Model of environment saved at {env_nerf}--------------------------------")
     
     return env_nerf
 
@@ -208,6 +203,7 @@ if args.train:
 elif args.scale:
     env_name = input("Enter Environment Name (from setup): ").strip()
     scale_env(env_name)
+    env_create(env_name)
 
 elif args.view:
     env_name = input("Enter Environment Name (from setup): ").strip()

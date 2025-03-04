@@ -4,10 +4,11 @@ import argparse
 import os
 
 def determine_scale(point1, point2, real_word_distance):
-    delta = np.linalg.norm([np.array(point1) - np.array(point2)])
-    scaling_factor = delta/real_word_distance
+    colmap_distance = np.linalg.norm(np.array(point1) - np.array(point2))
+    scaling_factor = real_word_distance / colmap_distance
     print(f'------------------Scaling Environment by a factor of {scaling_factor}------------------')
     return scaling_factor
+
 
 def scale_transforms(json_path, scaling_factor,  output_path='transforms_scaled.json'):
     # Load original transforms.json
@@ -18,7 +19,7 @@ def scale_transforms(json_path, scaling_factor,  output_path='transforms_scaled.
     for frame in data['frames']:
         transform_matrix = frame['transform_matrix']
 
-        # scale the translation part of the matrix (last column, first 3 values)
+        # Scale the translation part of the matrix (last column, first 3 values)
         for i in range(3):
             transform_matrix[i][3] *= scaling_factor
 
@@ -26,7 +27,7 @@ def scale_transforms(json_path, scaling_factor,  output_path='transforms_scaled.
 
     # Save modified transforms.json
     with open(output_path, 'w') as f:
-        json.dump(data, indent=4)
+        json.dump(data, f, indent=4)
 
     print(f'Scaled transforms saved to {output_path}')
 
@@ -40,9 +41,18 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # Rename transforms.json to transforms_unscaled.json
-    os.rename(args.json_path, args.json_path.replace('.json', '_unscaled.json'))
-    original_json_path = args.json_path.replace('.json', '_unscaled.json')
+    if os.path.exists(args.json_path):
+        os.rename(args.json_path, args.json_path.replace('.json', '_unscaled.json'))
+        original_json_path = args.json_path.replace('.json', '_unscaled.json')
 
+    # If json_path is not transforms.json, rename it to transforms.json
+    if os.path.basename(args.json_path) != 'transforms.json':
+        new_path = os.path.join(os.path.dirname(args.json_path), 'transforms.json')
+        args.json_path = new_path
+
+    else:
+        print(f'ERROR: {args.json_path} does not exist')
+        exit(1)
     # Determine the scaling factor and scale the transforms accordingly
     scaling_factor = determine_scale(args.point1, args.point2, args.real_distance)
     scale_transforms(original_json_path, scaling_factor, args.json_path)
