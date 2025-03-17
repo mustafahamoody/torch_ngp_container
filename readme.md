@@ -1,3 +1,6 @@
+## About
+Docker Container of torch-ngp to fix all dependency issues. With added Python script to go straight from video to NeRF with one command.
+
 ## Setup and Start the Container
 
 First, Clone this repo
