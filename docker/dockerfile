@@ -2,7 +2,7 @@
 FROM nvidia/cuda:11.3.1-devel-ubuntu20.04
 
 # Set the working directory
-WORKDIR /app
+WORKDIR /app                    
 
 # Set system to non interactive mode
 ENV DEBIAN_FRONTEND=noninteractive
@@ -120,6 +120,11 @@ RUN echo "export PATH=/usr/local/cuda/bin:$PATH" >> ~/.bashrc && \
 # Build Torch-NGP
 RUN /opt/conda/bin/conda run -n torch-ngp bash scripts/install_ext.sh
 
-# Set the UID and GID dynamically during build  -- Needed for the user to have access to the files and dirs
-RUN echo "export UID=$(id -u)" >> /root/.bashrc && \
-    echo "export GID=$(id -g)" >> /root/.bashrc
+# Create a non-root user
+RUN useradd -m -s /bin/bash appuser 
+
+# Set permissions (ensure the user can modify/delete)
+RUN chown -R appuser:appuser /home/appuser
+
+# Switch to non-root user
+USER appuser

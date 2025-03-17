@@ -211,5 +211,5 @@ elif args.view:
 
 else:
     env_name = data_setup()
-    scale_env(env_name)
+    # scale_env(env_name)
     env_create(env_name)
